@@ -55,7 +55,7 @@
       <h3>Settings</h3>
       <li>
       <h4>Population Size</h4>
-      <input id="populationSize" class="form-control" value="50" type="number" min=100></input>
+      <input id="populationSize" class="form-control" value="200" type="number" min=100></input>
       </li>
       <li>
       <h4>Mutation Chance</h4>
@@ -63,11 +63,11 @@
       </li>
       <li>
       <h4>City Count</h4>
-      <input id="numberOfNodes" class="form-control" value="10" type="number" max=30></input>
+      <input id="numberOfNodes" class="form-control" value="13" type="number" max=30></input>
       </li>
       <li>
       <h4>Max Iterations</h4>
-      <input id="maxIterations" class="form-control" value="1000" type="number"></input>
+      <input id="maxIterations" class="form-control" value="10000" type="number"></input>
       </li>
       <p class="alert alert-danger">Regenerate to apply settings.</p>
     </ul>
@@ -319,41 +319,62 @@
         while(selections.length < population.length) {
           let parent1 = floor(random(choices.length));
           let parent2 = floor(random(choices.length));
-          let baby = crossOver(choices[parent1], choices[parent2]);
-          selections.push(baby);
+          let babies = crossOver(choices[parent1], choices[parent2]);
+          selections.push(babies[0]);
+		  if(selections.length < population.length)
+			selections.push(babies[1]);
         }
         return selections;
       }
 
       int[] crossOver(parent1, parent2) {
-        let baby = initNan(parent1.length);
-        baby[0] = parent1[0];
-
-        let takeStart = floor(random(1, parent1.length / 2));
+        let baby1 = initNan(parent1.length);
+		let baby2 = initNan(parent1.length);
+        baby1[0] = parent1[0];
+		baby2[0] = parent1[0];
+        let takeStart = floor(random(1, parent1.length));
         let takeEnd = floor(random(takeStart, parent1.length));
 
         for(let i = takeStart; i < takeEnd; i++) {
-          baby[i] = parent1[i];
+          baby1[i] = parent1[i];
+		  baby2[i] = parent2[i];
         }
 
         var currIndex = 1;
         for(let i = 0; i < parent2.length; i++) {
-          if(baby[currIndex] != -1) {
+          if(baby1[currIndex] != -1) {
             i--;
             currIndex++;
             continue;
           }
 
-          if(baby.includes(parent2[i])) {
+          if(baby1.includes(parent2[i])) {
             continue;
           }
 
-          baby[currIndex] = parent2[i];
+          baby1[currIndex] = parent2[i];
+          currIndex++;
+        }
+		
+		currIndex = 1;
+        for(let i = 0; i < parent1.length; i++) {
+          if(baby2[currIndex] != -1) {
+            i--;
+            currIndex++;
+            continue;
+          }
+
+          if(baby2.includes(parent1[i])) {
+            continue;
+          }
+
+          baby2[currIndex] = parent1[i];
           currIndex++;
         }
 
-        baby[baby.length - 1] = parent1[parent1.length - 1];
-        return baby;
+        baby1[baby1.length - 1] = parent1[parent1.length - 1];
+		baby2[baby2.length - 1] = parent1[parent1.length - 1];
+        return [ baby1, baby2 ];
       }
 
       int[] initNan(length) {
