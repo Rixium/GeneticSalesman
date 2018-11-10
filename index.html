@@ -300,16 +300,21 @@
       int[] makeSelections() {
         let selections = [];
         let fitnesses = [];
+		let sum = 0;
+		let max = 0;
         for(let i = 0; i < population.length; i++) {
           let fitness = getFitness(nodes, population[i]);
+		  
+		  if(fitness > max)
+			max = fitness;
+			
           fitnesses.push(fitness);
         }
         let choices = [];
         for(let i = 0; i < fitnesses.length; i++) {
-          let shouldAdd = random(fitnesses[i]) < (totalPath / population.length / 2);
-          if(shouldAdd) {
+          let fixed = max - fitnesses[i];
+		  if(random(0, max) < fixed)
             choices.push(population[i]);
-          }
         }
         while(selections.length < population.length) {
           let parent1 = floor(random(choices.length));
