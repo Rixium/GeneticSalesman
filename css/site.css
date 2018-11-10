@@ -1,0 +1,22 @@
+.top-bar {
+  background-color: rgba(130, 80, 230, 55);
+  padding: 1em;
+  text-align: center;
+  color: rgba(255, 255, 255, 255);
+}
+
+.main-body {
+  padding: 2em;
+}
+
+.sticky {
+  position: fixed;
+  top: 0;
+}
+
+ul {
+  list-style: none;
+}
+li {
+  margin: 10px;
+}

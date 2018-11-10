@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Genetic Salesman</title>
+    <link rel="stylesheet" href="./css/bootstrap.css"></link>
+    <link rel="stylesheet" href="./css/site.css"></link>
+    <script src="./js/jquery.js" charset="utf-8"></script>
+    <script src="./js/bootstrap.js" charset="utf-8"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <script src="./js/processing.js" charset="utf-8"></script>
+  </head>
+  <body>
+    <div class="top-bar">
+    <h1>Genetic Salesman</h1>
+    <h5>by Daniel Pottenger</h5>
+    </div>
+    <div class="col-md-12 row">
+      <div class="col-md-4">
+      <div id="progress">
+        <ul id="statList" style="margin: 20px;">
+        <h3>Population Stats</h3>
+        <li>
+        <h4>Generations</h4>
+        <p id="totalGenerations"></p>
+        </li>
+        <li>
+        <h4>Best Path</h4>
+        <p id="bestPath"></p>
+        </li>
+        <li>
+        <h4>Best Path Distance</h4>
+        <p id="bestPathDistance"></p>
+        </li>
+        <li>
+        <h4>Average Distance</h4>
+        <p id="averagePathDistance"></p>
+        </li>
+        <h3>Overall Stats</h3>
+        <li>
+        <h4>Best Ever Path</h4>
+        <p id="bestEverPath"></p>
+        </li>
+        <li>
+        <h4>Best Ever Distance</h4>
+        <p id="bestEverDistance"></p>
+        </li>
+      </ul>
+    </div>
+    <div id="settings">
+      <ul id="settingsList" style="margin: 20px;">
+      <h3>Settings</h3>
+      <li>
+      <h4>Population Size</h4>
+      <input id="populationSize" class="form-control" value="3000" type="number" min=100></input>
+      </li>
+      <li>
+      <h4>Mutation Chance</h4>
+      <input id="mutationChance" class="form-control" value="0.01" type="number" max=1 step=0.01></input>
+      </li>
+      <li>
+      <h4>City Count</h4>
+      <input id="numberOfNodes" class="form-control" value="10" type="number" max=30></input>
+      </li>
+      <li>
+      <h4>Max Iterations</h4>
+      <input id="maxIterations" class="form-control" value="500" type="number"></input>
+      </li>
+      <p class="alert alert-danger">Regenerate to apply settings.</p>
+    </ul>
+  </div>
+</div>
+    <div class="col-md-6 text-center">
+        <canvas style="margin: 20px;" id="mycanvas"></canvas>
+    </div>
+  </div>
+  <div class="text-center" style="margin: 40px auto; bottom: 0; position: absolute; left: 0; right: 0;">
+    <button class="btn btn-success" onclick="start()">Start</button>
+    <button class="btn btn-primary" onclick="stop()">Regenerate</button>
+    <button class="btn btn-secondary" onclick="showSettings()"><i class="fas fa-cog"></i></button>
+    <a href="faq.html" target="_self" class="btn btn-danger"><i class="fas fa-question"></i></a>
+  </div>
+  <script type="text/javascript">
+    var processingInstance;
+
+    $(document).ready(function() {
+      $('#progress').hide();
+    });
+
+    function start() {
+        processingInstance = Processing.getInstanceById('mycanvas');
+          $('#settings').hide();
+          $('#progress').show();
+        processingInstance.start();
+    }
+
+    function stop() {
+        processingInstance = Processing.getInstanceById('mycanvas');
+        processingInstance.stopGenerations();
+    }
+
+    function showSettings() {
+      $('#settings').show();
+      $('#progress').hide();
+    }
+
+  </script>
+    <script type="text/processing" data-processing-target="mycanvas">
+      let path;
+      let nodeCount = 14;
+      let totalGenerations = 1;
+      let population = [];
+      let totalPath = 0;
+      let populationSize = 2000;
+      let mutationChance = 0.001;
+      let speed = 0;
+      let bestPathEver;
+      let bestDistanceEver = Infinity;
+      let maxIterations = 500;
+      let started = false;
+      let refreshTimeout;
+
+      Node[] nodes;
+
+      void setup()
+      {
+        begin();
+      }
+
+      void reset() {
+          nodeCount = parseInt($('#numberOfNodes').val());
+          populationSize = parseInt($('#populationSize').val());
+          mutationChance = parseFloat($('#mutationChance').val());
+          maxIterations = parseInt($('#maxIterations').val());
+
+          if(nodeCount > 30)
+            nodeCount = 30;
+          if(populationSize < 100)
+            populationSize = 100;
+      }
+
+      void begin() {
+        totalGenerations = 1;
+        population = [];
+        bestPathEver = [];
+        bestDistanceEver = Infinity;
+        reset();
+        size(600, 300);
+        fill(255);
+        rect(0, 0, 600, 300);
+        nodes = new Node[nodeCount];
+        for(let i = 0; i < nodes.length; i++) {
+          Node node = new Node((i + 1) * 600 / (nodes.length + 1), 50 + Math.floor(Math.random() * 200), i + 1);
+          nodes[i] = node;
+        }
+        generatePopulation(populationSize);
+        path = getBestPath(population);
+        OutputBestPath();
+        let parent1 = population[0];
+        let parent2 = population[1];
+        loop();
+      }
+
+      int[] getBestPath(pop) {
+        let bestMemberIndex = 0;
+        let bestMemberDistance = Infinity;
+        totalPath = 0;
+        for(let i = 0; i < pop.length; i++) {
+          let dist = getFitness(nodes, pop[i]);
+          totalPath += dist;
+          if(dist < bestMemberDistance) {
+            bestMemberDistance = dist;
+            bestMemberIndex = i;
+          }
+          if(dist < bestDistanceEver) {
+            bestDistanceEver = dist;
+            bestPathEver = pop[bestMemberIndex];
+          }
+        }
+        return pop[bestMemberIndex];
+      }
+
+      void generatePopulation(count) {
+        let newPopulation = [];
+        for(let i = 0; i < count; i++) {
+          newPath = createRandomPath();
+          newPopulation.push(newPath);
+        }
+        population = newPopulation;
+      }
+
+      let n = new Node(100, 100, 1);
+
+      void start() {
+        started = true;
+      }
+
+      void stopGenerations() {
+        clearTimeout(refreshTimeout);
+        started = false;
+        begin();
+      }
+
+      int[] createRandomPath() {
+          let newPath = [];
+          let available = [];
+          newPath.push(nodes[0].label - 1);
+          for(let i = 1; i < nodes.length; i++) {
+            available.push(nodes[i].label - 1);
+          }
+          while(newPath.length < nodes.length) {
+            let rand = floor(random(available.length));
+            let next = available[rand];
+            newPath.push(next);
+            available.splice(rand, 1);
+          }
+          newPath.push(nodes[0].label - 1);
+          return newPath;
+      }
+
+      void draw(){
+        background(0);
+        fill(0);
+        rect(0, 0, 600, 400);
+        stroke(140);
+        fill(30);
+        rect(2, 2, 596, 396);
+        stroke(255, 100, 100);
+        for(let i = 0; i < nodes.length - 1; i++) {
+          for(let j = i + 1; j < nodes.length; j++) {
+            let startNode = nodes[i];
+            let endNode = nodes[j];
+            line(startNode.x, startNode.y, endNode.x, endNode.y);
+          }
+        }
+
+        stroke(140, 255, 140);
+        strokeWeight(3);
+        for(let i = 0; i < bestPathEver.length - 1; i++) {
+          let startNode = nodes[bestPathEver[i]];
+          let endNode = nodes[bestPathEver[i + 1]]
+          line(startNode.x, startNode.y, endNode.x, endNode.y);
+        }
+
+        strokeWeight(1);
+
+        for(let i = 0; i < nodes.length; i++) {
+          nodes[i].draw();
+        }
+
+        if(!started)
+          return;
+        update();
+      }
+
+      void update() {
+        if(totalGenerations == maxIterations + 1) {
+          started = false;
+          return;
+        }
+        noLoop();
+        let selections = makeSelections();
+        selections = makeMutations(selections);
+        population = selections;
+        path = getBestPath(population);
+        OutputBestPath();
+        totalGenerations++;
+
+
+        if(started)
+          refreshTimeout = setTimeout(draw, 10);
+      }
+
+      int[] makeMutations(pop) {
+        for(let i = 0; i < pop.length; i++) {
+          pop[i] = mutate(pop[i]);
+        }
+        return pop;
+      }
+
+      int[] mutate(member) {
+        for(let i = 1; i < member.length - 1; i++) {
+          if(random() > mutationChance){
+              continue;
+          }
+
+          let mutateGene = floor(random(1, member.length - 1));
+          let mutateTo = floor(random(1, member.length - 1));
+
+          let gene = member[mutateGene];
+          member[mutateGene] = member[mutateTo];
+          member[mutateTo] = gene;
+        }
+          return member;
+      }
+
+      int[] makeSelections() {
+        let selections = [];
+        let fitnesses = [];
+        for(let i = 0; i < population.length; i++) {
+          let fitness = getFitness(nodes, population[i]);
+          fitnesses.push(fitness);
+        }
+        let choices = [];
+        for(let i = 0; i < fitnesses.length; i++) {
+          let shouldAdd = random(fitnesses[i]) < (totalPath / population.length / 2);
+          if(shouldAdd) {
+            choices.push(population[i]);
+          }
+        }
+        while(selections.length < population.length) {
+          let parent1 = floor(random(choices.length));
+          let parent2 = floor(random(choices.length));
+          let baby = crossOver(choices[parent1], choices[parent2]);
+          selections.push(baby);
+        }
+        return selections;
+      }
+
+      int[] crossOver(parent1, parent2) {
+        let baby = initNan(parent1.length);
+        baby[0] = parent1[0];
+
+        let takeStart = floor(random(1, parent1.length / 2));
+        let takeEnd = floor(random(takeStart, parent1.length));
+
+        for(let i = takeStart; i < takeEnd; i++) {
+          baby[i] = parent1[i];
+        }
+
+        var currIndex = 1;
+        for(let i = 0; i < parent2.length; i++) {
+          if(baby[currIndex] != -1) {
+            i--;
+            currIndex++;
+            continue;
+          }
+
+          if(baby.includes(parent2[i])) {
+            continue;
+          }
+
+          baby[currIndex] = parent2[i];
+          currIndex++;
+        }
+
+        baby[baby.length - 1] = parent1[parent1.length - 1];
+        return baby;
+      }
+
+      int[] initNan(length) {
+        let newArr = new int[length];
+        for(let i = 0; i < length; i++) {
+          newArr[i] = -1;
+        }
+        return newArr;
+      }
+
+      void OutputBestPath() {
+          let outputPath = "";
+          for(let i = 0; i < path.length; i++) {
+            outputPath += path[i] + 1 + "  ";
+          }
+          $('#bestPath').text(outputPath);
+
+          let fitness = getFitness(nodes, path);
+          $('#bestPathDistance').text(round(fitness));
+
+          $('#totalGenerations').text(totalGenerations);
+          $('#averagePathDistance').text(round(totalPath / population.length));
+
+          let bestPathOut = "";
+          for(let i = 0; i < bestPathEver.length; i++) {
+            bestPathOut += bestPathEver[i] + 1 + "  ";
+          }
+
+          $('#bestEverPath').text(bestPathOut);
+          $('#bestEverDistance').text(round(bestDistanceEver));
+      }
+
+      int getFitness(Node[] nodes, int[] path) {
+        let distance = 0;
+        for(let i = 0; i < path.length - 1; i++) {
+          let startNode = nodes[path[i]];
+          let endNode = nodes[path[i + 1]];
+          distance += startNode.distanceTo(endNode);
+        }
+        return distance;
+      }
+
+      class Node {
+
+        let x = 0;
+        let y = 0;
+        let color = (255, 255, 255);
+        let width = 20;
+        let height = 20;
+        let selected = false;
+        let label;
+
+        Node(x, y, index) {
+            this.x = x;
+            this.y = y;
+            this.label = index;
+        }
+
+        void draw() {
+          strokeWeight(2);
+          stroke(255);
+          fill(0);
+          if(label == 1) {
+            fill(100, 100, 255);
+          }
+          ellipse(x, y, width, height);
+          fill(255);
+          textAlign(CENTER, CENTER);
+          textSize(14);
+          text(label, x, y);
+          strokeWeight(1);
+        }
+
+        int distanceTo(Node node) {
+            return Math.sqrt(Math.pow(this.x - node.x, 2) + Math.pow(this.y - node.y, 2));
+        }
+
+      }
+    </script>
+  </body>
+</html>

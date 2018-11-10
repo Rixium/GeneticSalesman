@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Genetic Salesman</title>
+    <link rel="stylesheet" href="./css/bootstrap.css"></link>
+    <link rel="stylesheet" href="./css/site.css"></link>
+    <script src="./js/jquery.js" charset="utf-8"></script>
+    <script src="./js/bootstrap.js" charset="utf-8"></script>
+  </head>
+  <body>
+    <div class="top-bar">
+    <h1>Genetic Salesman</h1>
+    <h5>by Daniel Pottenger</h5>
+    </div>
+    <div class="container main-body">
+      <div class="row">
+      <div class="col-md-5">
+        <div class="help-nav">
+          <a href="index.html" target="_self" class="btn btn-danger scroll">Back</a><br/><br/>
+          <a id="population" class="btn btn-light scroll" style="width: 100%;">Where does the population come from?</a><br/><br/>
+          <a id="parentphrase" class="btn btn-light scroll" style="width: 100%;">What makes a parent phrase?</a><br/><br/>
+          <a id="populationsize" class="btn btn-light scroll" style="width: 100%;">Is a bigger population better?</a><br/><br/>
+          <a id="mutationrate" class="btn btn-light scroll" style="width: 100%;">How about a higher mutation rate?</a><br/><br/>
+          <a id="genes" class="btn btn-light scroll" style="width: 100%;">How do your genes work?</a><br/><br/>
+          <a id="crossover" class="btn btn-light scroll" style="width: 100%;">How do you create new phrases?</a><br/><br/>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="help-holder">
+          <h4 id="population_faq">Where does the population come from?</h4>
+          <p>The initial population is completely 'random'. We initially start at node 1, and create a random permutation of the remaining nodes. Since the travelling salesman must return to his starting node, we also append it to the end of the solution. This happens
+          over and over until the population is full, as specified.</p>
+          <h4 id="parentphrase_faq">What makes a parent soluton?</h4>
+          <p>Every genetic algorithm has a function that kind of says how good something is. The function in this algorithm goes through each node of the solution and calculates the distance to the next node. This sum of distances is what is used for the fitness of that particular solution.
+          The solutions with the least distance are the ones that are most likely to be selected as a parent during the selection phase.</p>
+          <h4 id="populationsize_faq">Is a bigger population better?</h4>
+          <p>A larger population gives more diversity, but it takes more time to find parents and create further populations. Depending on the size of your search space, the optimal solution may be in your initial population, which destroys the point of a genetic algorithm, and stops you visualising its progress.</p>
+          <h4 id="mutationrate_faq">How about a higher mutation rate?</h4>
+          <p>Usually the mutation rate is low. We need a mutation rate, just in case we miss a certain permutation within the initial population, so by mutation we have the chance to pick it out. Mutation can also get in the way of an optimal solution, such as when something is
+            mutating often, and the optimal solutions are lost because of it. Generally, the mutation rate should be less than 10% or 0.1.</p>
+              <h4 id="genes_faq">How do your genes work?</h4>
+              <p>The genes of this algorithm are basically the nodes to be visited. It is the sequence that is important in this case. Unlike genetic phrase where not all genes were present in a solution, in the case of this algorithm, all genes are present, and it is only the permutation of them that matters.</p>
+                <h4 id="crossover_faq">How do you create new solutions?</h4>
+                <p>In the case of this particular algorithm, after we have selected two parents, we begin the cross-over phase. This is where we pass the two parents in to a method, and the method will exchange the nodes, or 'genes', between them, to create a potentially better solution. The cross-over selects a
+                random segment of the first parent, and then iterates over the second parent, adding the remaining nodes. We do this because we can only visit nodes once, and this solution prevents nodes appearing twice - other than the start node, as we need to return to it.</p>
+              </thead>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
+<script>
+  $('.scroll').click(function(btn) {
+    $('html, body').animate({
+        scrollTop: $("#" + btn.target.id + "_faq").offset().top
+    }, 750);
+});
+</script>
